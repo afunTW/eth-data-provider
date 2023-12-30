@@ -1,0 +1,3 @@
+package ethdataprovider
+
+func main() {}
