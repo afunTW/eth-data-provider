@@ -1,12 +1,12 @@
 package router
 
 import (
-	"github.com/afunTW/eth-data-provider/src/config"
+	"github.com/afunTW/eth-data-provider/src/handler"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(config *config.Config) *gin.Engine {
+func NewRouter(v1Handler handler.Handler) *gin.Engine {
 	router := gin.New()
 
 	// set customized router config
@@ -21,7 +21,13 @@ func NewRouter(config *config.Config) *gin.Engine {
 		),
 	)
 
-	// TODO: set route
+	// set route
+	v1 := router.Group("/api/v1")
+	{
+		v1.GET("/blocks", v1Handler.GetLatestNBlocks)
+		v1.GET("/blocks/:id", v1Handler.GetBlockById)
+		v1.GET("/transaction/:txHash", v1Handler.GetTransactionByTxHash)
+	}
 
 	return router
 }
