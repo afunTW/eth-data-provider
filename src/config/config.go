@@ -24,6 +24,7 @@ func NewConfig() (config *Config) {
 	viper.AutomaticEnv()
 	viper.AddConfigPath(".")
 	viper.SetConfigName(".env")
+	viper.SetConfigType("env")
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Warning(err)
