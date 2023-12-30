@@ -14,7 +14,7 @@ type ApiService struct {
 	server *http.Server
 }
 
-func NewApiService(config *config.Config, router *gin.Engine) (service *ApiService, err error) {
+func NewApiService(config *config.Config, router *gin.Engine) (service *ApiService) {
 	if config.ServerBindAddr == "" {
 		log.Fatal("Missing config `SERVER_BIND_ADDR`")
 	}
@@ -26,5 +26,5 @@ func NewApiService(config *config.Config, router *gin.Engine) (service *ApiServi
 		config: config,
 		router: router,
 		server: server,
-	}, nil
+	}
 }

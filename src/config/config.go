@@ -10,7 +10,7 @@ type Config struct {
 	ServerBindAddr string `mapstructure:"SERVER_BIND_ADDR"`
 }
 
-func NewConfig() (config *Config, err error) {
+func NewConfig() (config *Config) {
 	// set default value
 	viper.SetDefault("SERVER_BIND_ADDR", ":8080")
 
@@ -24,7 +24,7 @@ func NewConfig() (config *Config, err error) {
 	viper.AutomaticEnv()
 	viper.AddConfigPath(".")
 	viper.SetConfigName(".env")
-	if err := viper.ReadConfig(); err != nil {
+	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Warning(err)
 		} else {
@@ -36,5 +36,5 @@ func NewConfig() (config *Config, err error) {
 	if err := viper.Unmarshal(&c); err != nil {
 		log.Fatalf("NewConfig failed: %v\n", err)
 	}
-	return &c, nil
+	return &c
 }
