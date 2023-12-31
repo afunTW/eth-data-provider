@@ -1,9 +1,12 @@
 package router
 
 import (
+	"github.com/afunTW/eth-data-provider/docs"
 	"github.com/afunTW/eth-data-provider/src/handler"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/swaggo/files"
+	"github.com/swaggo/gin-swagger"
 )
 
 func NewRouter(v1Handler handler.Handler) *gin.Engine {
@@ -19,10 +22,22 @@ func NewRouter(v1Handler handler.Handler) *gin.Engine {
 				ExposeHeaders: []string{"Content-Length"},
 			},
 		),
-        gin.Recovery(),
+		gin.Recovery(),
 	)
 
-	// set route
+	// set swagger info
+	docs.SwaggerInfo.Host = ""
+	docs.SwaggerInfo.BasePath = "/"
+	docs.SwaggerInfo.Schemes = []string{"https", "http"}
+	docs.SwaggerInfo.Title = "Ethereum Data Service"
+
+	// set root route
+	root := router.Group("/")
+	{
+		root.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
+
+	// set v1 route
 	v1 := router.Group("/api/v1")
 	{
 		v1.GET("/blocks", v1Handler.GetLatestBlocks)
