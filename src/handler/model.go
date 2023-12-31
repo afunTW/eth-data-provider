@@ -22,6 +22,12 @@ type RespGetLatestBlocks struct {
 	RespStatus
 }
 
+type RespGetBlockDetail struct {
+	BlockInfo
+	Transactions []string `json:"transactions"`
+	RespStatus
+}
+
 // ==============================
 // Component model
 // ==============================
