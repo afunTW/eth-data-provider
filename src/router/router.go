@@ -19,12 +19,13 @@ func NewRouter(v1Handler handler.Handler) *gin.Engine {
 				ExposeHeaders: []string{"Content-Length"},
 			},
 		),
+        gin.Recovery(),
 	)
 
 	// set route
 	v1 := router.Group("/api/v1")
 	{
-		v1.GET("/blocks", v1Handler.GetLatestNBlocks)
+		v1.GET("/blocks", v1Handler.GetLatestBlocks)
 		v1.GET("/blocks/:id", v1Handler.GetBlockById)
 		v1.GET("/transaction/:txHash", v1Handler.GetTransactionByTxHash)
 	}
