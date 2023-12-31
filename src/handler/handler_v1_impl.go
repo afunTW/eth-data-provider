@@ -19,6 +19,16 @@ func NewHandlerV1Impl(config *config.Config) Handler {
 	return &handlerV1Impl{config: config}
 }
 
+// @summary Get Latest blocks
+// @schemes https
+// @tags Block
+// @accept json
+// @produce json
+// @param request query ReqGetLatestBlocks true "query param"
+// @success 200 {object} RespGetLatestBlocks
+// @failure 400 {object} RespStatus
+// @failure 500 {object} RespStatus
+// @router /api/v1/blocks [get]
 func (h *handlerV1Impl) GetLatestBlocks(ctx *gin.Context) {
 	var query ReqGetLatestBlocks
 	if err := ctx.ShouldBindQuery(&query); err != nil {
@@ -39,6 +49,16 @@ func (h *handlerV1Impl) GetLatestBlocks(ctx *gin.Context) {
 	})
 }
 
+// @summary Get block by given block id
+// @schemes https
+// @tags Block
+// @accept json
+// @produce json
+// @param id path int true "block id"
+// @success 200 {object} RespGetBlockDetail
+// @failure 400 {object} RespStatus
+// @failure 500 {object} RespStatus
+// @router /api/v1/blocks/{id} [get]
 func (h *handlerV1Impl) GetBlockById(ctx *gin.Context) {
 	argBlockId := ctx.Param("id")
 	blockId, err := strconv.Atoi(argBlockId)
@@ -62,6 +82,16 @@ func (h *handlerV1Impl) GetBlockById(ctx *gin.Context) {
 	})
 }
 
+// @summary Get transactions by given tx hash
+// @schemes https
+// @tags Block
+// @accept json
+// @produce json
+// @param txHash path string true "tx Hash"
+// @success 200 {object} RespGetTransactionDetail
+// @failure 400 {object} RespStatus
+// @failure 500 {object} RespStatus
+// @router /api/v1/transaction/{txHash} [get]
 func (h *handlerV1Impl) GetTransactionByTxHash(ctx *gin.Context) {
 	argTxHash := ctx.Param("txHash")
 	// TODO: get transaction info by given tx hash
