@@ -5,7 +5,7 @@ package handler
 // ==============================
 
 type ReqGetLatestBlocks struct {
-	Limit uint16 `form:"limit"`
+	Limit uint16 `form:"limit,default=1" binding="required,min=1,max=1000"`
 }
 
 // ==============================
