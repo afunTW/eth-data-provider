@@ -62,4 +62,16 @@ func (h *handlerV1Impl) GetBlockById(ctx *gin.Context) {
 	})
 }
 
-func (h *handlerV1Impl) GetTransactionByTxHash(ctx *gin.Context) {}
+func (h *handlerV1Impl) GetTransactionByTxHash(ctx *gin.Context) {
+	argTxHash := ctx.Param("txHash")
+	// TODO: get transaction info by given tx hash
+	log.Debugf("Get txHash %v\n", argTxHash)
+	ctx.JSON(http.StatusOK, RespGetTransactionDetail{
+		TransactionInfo: TransactionInfo{},
+		Logs:            []TransactionEventLogInfo{},
+		RespStatus: RespStatus{
+			Message:   "Success",
+			Timestamp: uint64(time.Now().UnixNano()),
+		},
+	})
+}
