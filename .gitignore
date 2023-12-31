@@ -21,4 +21,5 @@
 go.work
 
 .env
+docs/
 eth_data_provider
