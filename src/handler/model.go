@@ -28,6 +28,12 @@ type RespGetBlockDetail struct {
 	RespStatus
 }
 
+type RespGetTransactionDetail struct {
+	TransactionInfo
+	Logs []TransactionEventLogInfo `json:"logs"`
+	RespStatus
+}
+
 // ==============================
 // Component model
 // ==============================
@@ -37,4 +43,18 @@ type BlockInfo struct {
 	BlockHash  string `json:"block_hash"`
 	BlockTime  uint64 `json:"block_time"`
 	ParentHash string `json:"parent_hash"`
+}
+
+type TransactionInfo struct {
+	TxHash string `json:"tx_hash"`
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Nonce  int    `json:"nonce"`
+	Data   string `json:"data"`
+	Value  string `json:"value"`
+}
+
+type TransactionEventLogInfo struct {
+	Index int    `json:"index"`
+	Data  string `json:"data"`
 }
