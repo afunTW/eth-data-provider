@@ -7,7 +7,6 @@ import (
 	"syscall"
 
 	"github.com/afunTW/eth-data-provider/src/config"
-	"github.com/afunTW/eth-data-provider/src/handler"
 	"github.com/afunTW/eth-data-provider/src/router"
 	"github.com/afunTW/eth-data-provider/src/service"
 	log "github.com/sirupsen/logrus"
@@ -20,7 +19,7 @@ func main() {
 	log.Info("Start service")
 	// run service in coroutine
 	config := config.NewConfig()
-	v1Handler := handler.NewHandlerV1Impl(config)
+	v1Handler := router.NewHandlerV1Impl(config)
 	router := router.NewRouter(v1Handler)
 	service := service.NewApiService(config, router)
 	go service.Run(ctx)
