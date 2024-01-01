@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	ServerBindAddr string `mapstructure:"SERVER_BIND_ADDR" validate:"required"`
-	EthereumHost   string `mapstructure:"ETHEREUM_HOST validate:"required"`
+	EthereumHost   string `mapstructure:"ETHEREUM_HOST" validate:"required"`
 }
 
 func NewConfig() (config *Config) {
