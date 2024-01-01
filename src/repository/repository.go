@@ -1,7 +1,7 @@
 package repository
 
 type EthereumRepository interface {
-	GetBlockByNumber()
+	GetBlockByNumber(blockNumber string) (*EthereumBlock, error)
 	GetTransactionByHash()
 	GetTransactionReceipt()
 }

@@ -1,11 +1,94 @@
 package repository
 
-type ethereumRpcImpl struct{}
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"net/http"
 
-func NewEthereumRpcImpl() EthereumRepository {
-	return &ethereumRpcImpl{}
+	log "github.com/sirupsen/logrus"
+)
+
+type jsonRpcRequest struct {
+	JsonRpc string      `json:"jsonrpc"`
+	Method  string      `json:"method"`
+	Params  interface{} `json:"params"`
+	Id      int         `json:"id"`
 }
 
-func (e *ethereumRpcImpl) GetBlockByNumber()      {}
-func (e *ethereumRpcImpl) GetTransactionByHash()  {}
-func (e *ethereumRpcImpl) GetTransactionReceipt() {}
+type jsonRpcResponse struct {
+	JsonRpc string      `json:"jsonrpc"`
+	Id      int         `json:"id"`
+	Result  interface{} `json:"result"`
+}
+
+func (r *jsonRpcResponse) ToBlock() (*EthereumBlock, error) {
+	var block EthereumBlock
+	blockBytes, err := json.Marshal(r.Result)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(blockBytes, &block)
+	if err != nil {
+		return nil, err
+	}
+	return &block, nil
+}
+
+type ethereumImpl struct {
+	host   string
+	client *http.Client
+}
+
+func NewEthereumJsonRpcImpl(host string) EthereumRepository {
+	return &ethereumImpl{host: host, client: &http.Client{}}
+}
+
+func (e *ethereumImpl) rpcCall(body io.Reader) (*jsonRpcResponse, error) {
+	req, err := http.NewRequest("POST", e.host, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := e.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// parse response
+	var respBody jsonRpcResponse
+	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+		return nil, err
+	}
+	return &respBody, nil
+}
+
+func (e *ethereumImpl) GetBlockByNumber(blockNum string) (*EthereumBlock, error) {
+	// prepare
+	reqBody := jsonRpcRequest{
+		JsonRpc: "2.0",
+		Method:  "eth_getBlockByNumber",
+		Params:  []interface{}{blockNum, true},
+		Id:      1,
+	}
+	log.Debugf("GetBlockByNumber: prepare rpc request %+v\n", reqBody)
+	reqBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+	// rpc call
+	respBody, err := e.rpcCall(bytes.NewBuffer(reqBytes))
+	if err != nil {
+		return nil, err
+	}
+	// transform
+	block, err := respBody.ToBlock()
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
+}
+
+func (e *ethereumImpl) GetTransactionByHash()  {}
+func (e *ethereumImpl) GetTransactionReceipt() {}
