@@ -2,14 +2,13 @@ package router
 
 import (
 	"github.com/afunTW/eth-data-provider/docs"
-	"github.com/afunTW/eth-data-provider/src/handler"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/swaggo/files"
 	"github.com/swaggo/gin-swagger"
 )
 
-func NewRouter(v1Handler handler.Handler) *gin.Engine {
+func NewRouter(v1Handler Handler) *gin.Engine {
 	router := gin.New()
 
 	// set customized router config
