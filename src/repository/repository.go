@@ -2,6 +2,6 @@ package repository
 
 type EthereumRepository interface {
 	GetBlockByNumber(blockNumber string) (*EthereumBlock, error)
-	GetTransactionByHash()
+	GetTransactionByHash(txHash string) (*EthereumTransaction, error)
 	GetTransactionReceipt()
 }

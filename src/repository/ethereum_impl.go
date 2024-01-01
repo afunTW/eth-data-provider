@@ -35,6 +35,19 @@ func (r *jsonRpcResponse) ToBlock() (*EthereumBlock, error) {
 	return &block, nil
 }
 
+func (r *jsonRpcResponse) ToTransaction() (*EthereumTransaction, error) {
+	var tx EthereumTransaction
+	txBytes, err := json.Marshal(r.Result)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(txBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+	return &tx, nil
+}
+
 type ethereumImpl struct {
 	host   string
 	client *http.Client
@@ -90,5 +103,30 @@ func (e *ethereumImpl) GetBlockByNumber(blockNum string) (*EthereumBlock, error)
 	return block, nil
 }
 
-func (e *ethereumImpl) GetTransactionByHash()  {}
+func (e *ethereumImpl) GetTransactionByHash(txHash string) (*EthereumTransaction, error) {
+	// prepare
+	reqBody := jsonRpcRequest{
+		JsonRpc: "2.0",
+		Method:  "eth_getTransactionByHash",
+		Params:  []interface{}{txHash},
+		Id:      1,
+	}
+	log.Debugf("GetTransactionByHash: prepare rpc request %+v\n", reqBody)
+	reqBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+	// rpc call
+	respBody, err := e.rpcCall(bytes.NewBuffer(reqBytes))
+	if err != nil {
+		return nil, err
+	}
+	// transform
+	tx, err := respBody.ToTransaction()
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
+}
+
 func (e *ethereumImpl) GetTransactionReceipt() {}
