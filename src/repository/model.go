@@ -38,3 +38,31 @@ type EthereumTransaction struct {
 	R                string `json:"r"`
 	S                string `json:"s"`
 }
+
+type EthereumTransactionReceipt struct {
+	TransactionHash   string        `json:"transactionHash"`
+	TransactionIndex  string        `json:"transactionIndex"`
+	BlockHash         string        `json:"blockHash"`
+	BlockNumber       string        `json:"blockNumber"`
+	From              string        `json:"from"`
+	To                string        `json:"to"`
+	CumulativeGasUsed string        `json:"cumulativeGasUsed"`
+	EffectiveGasPrice string        `json:"effectiveGasPrice"`
+	GasUsed           string        `json:"gasUsed"`
+	ContractAddress   string        `json:"contractAddress"`
+	Logs              []EthereumLog `json:"logs"`
+	LogsBloom         string        `json:"logsBloom"`
+	Type              string        `json:"type"`
+}
+
+type EthereumLog struct {
+	Removed          bool     `json:"removed"`
+	LogIndex         string   `json:"logIndex"`
+	TransactionIndex string   `json:"transactionIndex"`
+	TransactionHash  string   `json:"transactionHash"`
+	BlockHash        string   `json:"blockHash"`
+	BlockNumber      string   `json:"blockNumber"`
+	Address          string   `json:"address"`
+	Data             string   `json:"data"`
+	Topics           []string `json:"topics"`
+}

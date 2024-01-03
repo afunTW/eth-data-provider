@@ -48,6 +48,19 @@ func (r *jsonRpcResponse) ToTransaction() (*EthereumTransaction, error) {
 	return &tx, nil
 }
 
+func (r *jsonRpcResponse) ToTransactionReceipt() (*EthereumTransactionReceipt, error) {
+	var tx EthereumTransactionReceipt
+	txBytes, err := json.Marshal(r.Result)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(txBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+	return &tx, nil
+}
+
 type ethereumImpl struct {
 	host   string
 	client *http.Client
@@ -129,4 +142,28 @@ func (e *ethereumImpl) GetTransactionByHash(txHash string) (*EthereumTransaction
 	return tx, nil
 }
 
-func (e *ethereumImpl) GetTransactionReceipt() {}
+func (e *ethereumImpl) GetTransactionReceipt(txHash string) (*EthereumTransactionReceipt, error) {
+	// prepare
+	reqBody := jsonRpcRequest{
+		JsonRpc: "2.0",
+		Method:  "eth_getTransactionReceipt",
+		Params:  []interface{}{txHash},
+		Id:      1,
+	}
+	log.Debugf("GetTransactionReceipt: prepare rpc request %+v\n", reqBody)
+	reqBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+	// rpc call
+	respBody, err := e.rpcCall(bytes.NewBuffer(reqBytes))
+	if err != nil {
+		return nil, err
+	}
+	// transform
+	tx, err := respBody.ToTransactionReceipt()
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
+}
