@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"math/big"
 
 	"github.com/afunTW/eth-data-provider/src/config"
@@ -63,7 +62,8 @@ func (s *BlockIndexService) blockWorker(ctx context.Context) {
 				log.Errorf("BlockWorker(blockNum=%v): failed %v\n", blockNum, err)
 				continue
 			}
-			log.Debugf("BlockWorker(blockNum=%v)\n", blockNum)
+			transactions := block.Transactions()
+			log.Debugf("BlockWorker(blockNum=%v): get %v transactions\n", blockNum, len(transactions))
 		}
 	}
 }
