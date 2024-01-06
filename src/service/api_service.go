@@ -31,7 +31,7 @@ func NewApiService(config *config.Config, router *gin.Engine) (service *ApiServi
 }
 
 func (s *ApiService) Run(ctx context.Context) error {
-	log.Info("Run server")
+	log.Info("ApiService: start")
 	if s.router == nil {
 		log.Fatal("Missing router")
 	}

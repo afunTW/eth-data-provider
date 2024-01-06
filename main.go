@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,16 +18,34 @@ func main() {
 	defer cancel()
 
 	log.Info("Start service")
-	// run service in coroutine
+
+	// init dependency
 	config := config.NewConfig()
+	ll, err := log.ParseLevel(config.LogLevel)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.SetLevel(ll)
 	v1Handler := router.NewHandlerV1Impl(config)
 	router := router.NewRouter(v1Handler)
-	service := service.NewApiService(config, router)
-	go service.Run(ctx)
+
+	// run service
+	apiService := service.NewApiService(config, router)
+	go apiService.Run(ctx)
+	blockIndexService := service.NewBlockIndexService(config)
+	go blockIndexService.Start(ctx)
 
 	// block until recv signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Info("End service")
+}
+
+func PrettyPrint(v interface{}) string {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		log.Error(err)
+	}
+	return string(b)
 }
