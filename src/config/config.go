@@ -7,13 +7,18 @@ import (
 )
 
 type Config struct {
-	ServerBindAddr string `mapstructure:"SERVER_BIND_ADDR" validate:"required"`
-	EthereumHost   string `mapstructure:"ETHEREUM_HOST" validate:"required"`
+	LogLevel                 string `mapstructure:"LOG_LEVEL"`
+	ServerBindAddr           string `mapstructure:"SERVER_BIND_ADDR"`
+	EthereumHost             string `mapstructure:"ETHEREUM_HOST" validate:"required"`
+	EthereumBlockInitFrom    int    `mapstructure:"ETHEREUM_BLOCK_INIT_FROM" validate:"required"`
+	EthereumBlockWorkerCount int    `mapstructure:"ETHEREUM_BLOCK_WORKER_COUNT"`
 }
 
 func NewConfig() (config *Config) {
 	// set default value
+	viper.SetDefault("LOG_LEVEL", "info")
 	viper.SetDefault("SERVER_BIND_ADDR", ":8080")
+	viper.SetDefault("ETHEREUM_BLOKC_WORKER_COUNT", 100)
 
 	// bind env variable
 	tags := GetMapStructureTag(Config{})
