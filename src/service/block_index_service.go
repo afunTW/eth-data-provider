@@ -78,13 +78,20 @@ func (s *BlockIndexService) blockWorker(ctx context.Context) {
 				log.Errorf("BlockWorker(blockNum=%v): failed %v\n", blockNum, err)
 			}
 			// handle transactions
+			// handle transactionLog from receipt
 			txs := block.Transactions()
 			log.Debugf("BlockWorker(blockNum=%v): get %v transactions\n", blockNum, len(txs))
 			var txRecords []*repository.EthereumTransaction
+			var logRecords []*repository.EthereumLog
 			for _, tx := range txs {
 				from, err := types.Sender(types.NewEIP155Signer(tx.ChainId()), tx)
 				if err != nil {
 					from, _ = types.Sender(types.HomesteadSigner{}, tx)
+				}
+				// TODO: ignore data if it excceed the limit of database blob
+				txData := tx.Data()
+				if len(txData) > 65535 {
+					txData = nil
 				}
 				txRecords = append(txRecords, &repository.EthereumTransaction{
 					TxHash:      tx.Hash().Hex(),
@@ -92,14 +99,38 @@ func (s *BlockIndexService) blockWorker(ctx context.Context) {
 					FromAddress: from.Hex(),
 					ToAddress:   tx.To().Hex(),
 					Nonce:       tx.Nonce(),
-					Data:        tx.Data(),
+					Data:        txData,
 					Value:       tx.Value().Uint64(),
 				})
+				receipt, err := s.client.TransactionReceipt(ctx, tx.Hash())
+				if err != nil {
+					log.Errorf("BlockWorker(blockNum=%v): failed get receipt\n%v\n", blockNum, err)
+				}
+				for _, txLog := range receipt.Logs {
+					if receipt.TxHash.Hex() != tx.Hash().Hex() {
+						log.Warnf("receipt hash: %v\ntx hash: %v\n", receipt.TxHash.Hex(), tx.Hash().Hex())
+					}
+					txLogData := txLog.Data
+					if len(txLog.Data) > 65535 {
+						txLogData = nil
+					}
+					logRecords = append(logRecords, &repository.EthereumLog{
+						TxHash:   receipt.TxHash.Hex(),
+						LogIndex: uint64(txLog.Index),
+						Data:     txLogData,
+					})
+				}
 			}
 			err = s.repo.AddTransactions(txRecords)
 			if err != nil {
-				log.Errorf("BlockWorker(blockNum=%v): failed %v\n", blockNum, err)
+				log.Errorf("BlockWorker(blockNum=%v): failed add txs\n%v\n", blockNum, err)
 			}
+			log.Debugf("BlockWorker(blockNum=%v): processed %v transactions\n", blockNum, len(txRecords))
+			err = s.repo.AddLogs(logRecords)
+			if err != nil {
+				log.Errorf("BlockWorker(blockNum=%v): failed add logs\n%v\n", blockNum, err)
+			}
+			log.Debugf("BlockWorker(blockNum=%v): processed %v logs\n", blockNum, len(logRecords))
 		}
 	}
 }
