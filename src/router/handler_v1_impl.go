@@ -1,6 +1,7 @@
 package router
 
 import (
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -54,7 +55,7 @@ func (h *handlerV1Impl) GetLatestBlocks(ctx *gin.Context) {
 	var blockResponse []BlockInfo
 	for _, blockRecord := range blockRecords {
 		blockResponse = append(blockResponse, BlockInfo{
-			BlockNum:   int(blockRecord.BlockNum),
+			BlockNum:   blockRecord.BlockNum,
 			BlockHash:  blockRecord.BlockHash,
 			BlockTime:  blockRecord.BlockTime,
 			ParentHash: blockRecord.ParentHash,
@@ -91,7 +92,7 @@ func (h *handlerV1Impl) GetBlockById(ctx *gin.Context) {
 		})
 		return
 	}
-	// TODO: get block info by given block id
+	// get block info by given block id
 	blockRecord, err := h.repo.GetBlock(uint64(blockId))
 	if err != nil {
 		log.Error(err)
@@ -111,7 +112,7 @@ func (h *handlerV1Impl) GetBlockById(ctx *gin.Context) {
 	// transform
 	log.Debugf("Get blockId %v with %v transactions\n", blockId, len(transactionRecords))
 	blockResponse := BlockInfo{
-		BlockNum:   int(blockRecord.BlockNum),
+		BlockNum:   blockRecord.BlockNum,
 		BlockHash:  blockRecord.BlockHash,
 		BlockTime:  blockRecord.BlockTime,
 		ParentHash: blockRecord.ParentHash,
@@ -143,11 +144,44 @@ func (h *handlerV1Impl) GetBlockById(ctx *gin.Context) {
 // @router /api/v1/transaction/{txHash} [get]
 func (h *handlerV1Impl) GetTransactionByTxHash(ctx *gin.Context) {
 	argTxHash := ctx.Param("txHash")
-	// TODO: get transaction info by given tx hash
-	log.Debugf("Get txHash %v\n", argTxHash)
+	// get transaction info by given tx hash
+	transactionRecord, err := h.repo.GetTransaction(argTxHash)
+	if err != nil {
+		log.Error(err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, RespStatus{
+			Message:   "Fail to fetch transactions",
+			Timestamp: uint64(time.Now().UnixNano()),
+		})
+	}
+	logRecords, err := h.repo.GetLogs(argTxHash)
+	if err != nil {
+		log.Error(err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, RespStatus{
+			Message:   "Fail to fetch logs",
+			Timestamp: uint64(time.Now().UnixNano()),
+		})
+	}
+	// transform
+	log.Debugf("Get txHash %v with %v logs\n", argTxHash, len(logRecords))
+	transactionResponse := TransactionInfo{
+		TxHash: transactionRecord.TxHash,
+		From:   transactionRecord.FromAddress,
+		To:     transactionRecord.ToAddress,
+		Nonce:  transactionRecord.Nonce,
+		Data:  hex.EncodeToString(transactionRecord.Data),
+		Value: transactionRecord.Value,
+	}
+	var logsResponse []TransactionEventLogInfo
+	for _, logRecord := range logRecords {
+		logsResponse = append(logsResponse, TransactionEventLogInfo{
+			Index: logRecord.LogIndex,
+			Data: hex.EncodeToString(logRecord.Data),
+		})
+	}
+	// result
 	ctx.JSON(http.StatusOK, RespGetTransactionDetail{
-		TransactionInfo: TransactionInfo{},
-		Logs:            []TransactionEventLogInfo{},
+		TransactionInfo: transactionResponse,
+		Logs:            logsResponse,
 		RespStatus: RespStatus{
 			Message:   "Success",
 			Timestamp: uint64(time.Now().UnixNano()),
