@@ -66,6 +66,7 @@ func (s *BlockIndexService) blockWorker(ctx context.Context) {
 				log.Errorf("BlockWorker(blockNum=%v): failed %v\n", blockNum, err)
 				continue
 			}
+			// TODO: check block nil pointer dereference problem
 			err = s.repo.AddBlocks([]*repository.EthereumBlock{
 				{
 					BlockNum:   block.Number().Uint64(),
@@ -93,6 +94,7 @@ func (s *BlockIndexService) blockWorker(ctx context.Context) {
 				if len(txData) > 65535 {
 					txData = nil
 				}
+				// TODO: check block nil pointer dereference problem
 				txRecords = append(txRecords, &repository.EthereumTransaction{
 					TxHash:      tx.Hash().Hex(),
 					BlockNum:    block.Number().Uint64(),
@@ -114,6 +116,7 @@ func (s *BlockIndexService) blockWorker(ctx context.Context) {
 					if len(txLog.Data) > 65535 {
 						txLogData = nil
 					}
+					// TODO: check block nil pointer dereference problem
 					logRecords = append(logRecords, &repository.EthereumLog{
 						TxHash:   receipt.TxHash.Hex(),
 						LogIndex: uint64(txLog.Index),

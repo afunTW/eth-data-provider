@@ -42,8 +42,25 @@ func (h *handlerV1Impl) GetLatestBlocks(ctx *gin.Context) {
 		return
 	}
 	// TODO: get latest N blocks
+	blockRecords, err := h.repo.GetLatestBlock(int(query.Limit))
+	if err != nil {
+		log.Error(err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, RespStatus{
+			Message:   "Fail to fetch blocks",
+			Timestamp: uint64(time.Now().UnixNano()),
+		})
+	}
+	var blockResponse []BlockInfo
+	for _, blockRecord := range blockRecords {
+		blockResponse = append(blockResponse, BlockInfo{
+			BlockNum:   int(blockRecord.BlockNum),
+			BlockHash:  blockRecord.BlockHash,
+			BlockTime:  blockRecord.BlockTime,
+			ParentHash: blockRecord.ParentHash,
+		})
+	}
 	ctx.JSON(http.StatusOK, RespGetLatestBlocks{
-		Blocks: []BlockInfo{},
+		Blocks: blockResponse,
 		RespStatus: RespStatus{
 			Message:   "Success",
 			Timestamp: uint64(time.Now().UnixNano()),
