@@ -39,6 +39,28 @@ func (r *ethereumIndexGormImpl) GetLatestBlock(limit int) ([]*EthereumBlock, err
 	return records, nil
 }
 
+func (r *ethereumIndexGormImpl) GetBlock(blockNum uint64) (*EthereumBlock, error) {
+	var record *EthereumBlock
+	result := r.db.Model(&EthereumBlock{}).
+		Where("block_num = ?", blockNum).
+		First(&record)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return record, nil
+}
+
+func (r *ethereumIndexGormImpl) GetTransactions(blockNum uint64) ([]*EthereumTransaction, error) {
+	var records []*EthereumTransaction
+	result := r.db.Model(&EthereumTransaction{}).
+		Where("block_num = ?", blockNum).
+		Find(&records)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return records, nil
+}
+
 func (r *ethereumIndexGormImpl) addRecords(records interface{}) error {
 	result := r.db.Create(records)
 	if result.Error != nil {
