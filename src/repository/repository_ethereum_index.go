@@ -30,6 +30,15 @@ func (r *ethereumIndexGormImpl) AddLogs(records []*EthereumLog) error {
 	return r.addRecords(records)
 }
 
+func (r *ethereumIndexGormImpl) GetLatestBlock(limit int) ([]*EthereumBlock, error) {
+	var records []*EthereumBlock
+	result := r.db.Order("block_num DESC").Limit(limit).Find(&records)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return records, nil
+}
+
 func (r *ethereumIndexGormImpl) addRecords(records interface{}) error {
 	result := r.db.Create(records)
 	if result.Error != nil {

@@ -8,4 +8,5 @@ type EthereumIndexRepository interface {
 	AddBlocks(records []*EthereumBlock) error
 	AddTransactions(records []*EthereumTransaction) error
 	AddLogs(records []*EthereumLog) error
+	GetLatestBlock(limit int) ([]*EthereumBlock, error)
 }
