@@ -41,7 +41,7 @@ func (h *handlerV1Impl) GetLatestBlocks(ctx *gin.Context) {
 		})
 		return
 	}
-	// TODO: get latest N blocks
+	// get latest N blocks
 	blockRecords, err := h.repo.GetLatestBlock(int(query.Limit))
 	if err != nil {
 		log.Error(err)
@@ -50,6 +50,7 @@ func (h *handlerV1Impl) GetLatestBlocks(ctx *gin.Context) {
 			Timestamp: uint64(time.Now().UnixNano()),
 		})
 	}
+	// transform
 	var blockResponse []BlockInfo
 	for _, blockRecord := range blockRecords {
 		blockResponse = append(blockResponse, BlockInfo{
@@ -59,6 +60,7 @@ func (h *handlerV1Impl) GetLatestBlocks(ctx *gin.Context) {
 			ParentHash: blockRecord.ParentHash,
 		})
 	}
+	// result
 	ctx.JSON(http.StatusOK, RespGetLatestBlocks{
 		Blocks: blockResponse,
 		RespStatus: RespStatus{
@@ -90,10 +92,38 @@ func (h *handlerV1Impl) GetBlockById(ctx *gin.Context) {
 		return
 	}
 	// TODO: get block info by given block id
-	log.Debugf("Get blockId %v\n", blockId)
+	blockRecord, err := h.repo.GetBlock(uint64(blockId))
+	if err != nil {
+		log.Error(err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, RespStatus{
+			Message:   "Fail to fetch blocks",
+			Timestamp: uint64(time.Now().UnixNano()),
+		})
+	}
+	transactionRecords, err := h.repo.GetTransactions(uint64(blockId))
+	if err != nil {
+		log.Error(err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, RespStatus{
+			Message:   "Fail to fetch transactions",
+			Timestamp: uint64(time.Now().UnixNano()),
+		})
+	}
+	// transform
+	log.Debugf("Get blockId %v with %v transactions\n", blockId, len(transactionRecords))
+	blockResponse := BlockInfo{
+		BlockNum:   int(blockRecord.BlockNum),
+		BlockHash:  blockRecord.BlockHash,
+		BlockTime:  blockRecord.BlockTime,
+		ParentHash: blockRecord.ParentHash,
+	}
+	var transactionsResponse []string
+	for _, transactionRecord := range transactionRecords {
+		transactionsResponse = append(transactionsResponse, transactionRecord.TxHash)
+	}
+	// result
 	ctx.JSON(http.StatusOK, RespGetBlockDetail{
-		BlockInfo:    BlockInfo{},
-		Transactions: []string{},
+		BlockInfo:    blockResponse,
+		Transactions: transactionsResponse,
 		RespStatus: RespStatus{
 			Message:   "Success",
 			Timestamp: uint64(time.Now().UnixNano()),
