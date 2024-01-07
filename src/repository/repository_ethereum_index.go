@@ -26,6 +26,10 @@ func (r *ethereumIndexGormImpl) AddTransactions(records []*EthereumTransaction) 
 	return r.addRecords(&records)
 }
 
+func (r *ethereumIndexGormImpl) AddLogs(records []*EthereumLog) error {
+	return r.addRecords(records)
+}
+
 func (r *ethereumIndexGormImpl) addRecords(records interface{}) error {
 	result := r.db.Create(records)
 	if result.Error != nil {

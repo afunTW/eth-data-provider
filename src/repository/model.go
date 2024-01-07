@@ -49,3 +49,20 @@ type EthereumTransaction struct {
 }
 
 func (e *EthereumTransaction) TableName() string { return "transactions" }
+
+/* CREATE TABLE logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tx_hash VARCHAR(66) NOT NULL,
+    log_index INT UNSIGNED NOT NULL,
+    data BLOB,
+    FOREIGN KEY (tx_hash) REFERENCES transactions(tx_hash)
+); */
+
+type EthereumLog struct {
+	Id       int    `gorm:"column:id;primaryKey;autoIncrement"`
+	TxHash   string `gorm:"column:tx_hash"`
+	LogIndex uint64 `gorm:"column:log_index"`
+	Data     []byte `gorm:"column:data"`
+}
+
+func (e *EthereumLog) TableName() string { return "logs" }
