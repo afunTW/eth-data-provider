@@ -6,6 +6,7 @@ import (
 
 	"github.com/afunTW/eth-data-provider/src/config"
 	"github.com/afunTW/eth-data-provider/src/repository"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	log "github.com/sirupsen/logrus"
 )
@@ -59,15 +60,13 @@ func (s *BlockIndexService) blockWorker(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case blockNum := <-s.blockNumberChan:
-			// TODO: get block, tx, receipt, log and store to db
+			// handle block
 			block, err := s.client.BlockByNumber(ctx, blockNum)
 			if err != nil {
 				log.Errorf("BlockWorker(blockNum=%v): failed %v\n", blockNum, err)
 				continue
 			}
-			transactions := block.Transactions()
-			log.Debugf("BlockWorker(blockNum=%v): get %v transactions\n", blockNum, len(transactions))
-			s.repo.AddBlocks([]*repository.EthereumBlock{
+			err = s.repo.AddBlocks([]*repository.EthereumBlock{
 				{
 					BlockNum:   block.Number().Uint64(),
 					BlockHash:  block.Hash().Hex(),
@@ -75,6 +74,32 @@ func (s *BlockIndexService) blockWorker(ctx context.Context) {
 					ParentHash: block.ParentHash().Hex(),
 				},
 			})
+			if err != nil {
+				log.Errorf("BlockWorker(blockNum=%v): failed %v\n", blockNum, err)
+			}
+			// handle transactions
+			txs := block.Transactions()
+			log.Debugf("BlockWorker(blockNum=%v): get %v transactions\n", blockNum, len(txs))
+			var txRecords []*repository.EthereumTransaction
+			for _, tx := range txs {
+				from, err := types.Sender(types.NewEIP155Signer(tx.ChainId()), tx)
+				if err != nil {
+					from, _ = types.Sender(types.HomesteadSigner{}, tx)
+				}
+				txRecords = append(txRecords, &repository.EthereumTransaction{
+					TxHash:      tx.Hash().Hex(),
+					BlockNum:    block.Number().Uint64(),
+					FromAddress: from.Hex(),
+					ToAddress:   tx.To().Hex(),
+					Nonce:       tx.Nonce(),
+					Data:        tx.Data(),
+					Value:       tx.Value().Uint64(),
+				})
+			}
+			err = s.repo.AddTransactions(txRecords)
+			if err != nil {
+				log.Errorf("BlockWorker(blockNum=%v): failed %v\n", blockNum, err)
+			}
 		}
 	}
 }
