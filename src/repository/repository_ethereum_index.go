@@ -11,9 +11,7 @@ type ethereumIndexGormImpl struct {
 }
 
 func NewEthereumIndexGormImpl(dsn string) EthereumIndexRepository {
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		CreateBatchSize: 100,
-	})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -21,7 +19,15 @@ func NewEthereumIndexGormImpl(dsn string) EthereumIndexRepository {
 }
 
 func (r *ethereumIndexGormImpl) AddBlocks(records []*EthereumBlock) error {
-	result := r.db.Create(&records)
+	return r.addRecords(&records)
+}
+
+func (r *ethereumIndexGormImpl) AddTransactions(records []*EthereumTransaction) error {
+	return r.addRecords(&records)
+}
+
+func (r *ethereumIndexGormImpl) addRecords(records interface{}) error {
+	result := r.db.Create(records)
 	if result.Error != nil {
 		return result.Error
 	}

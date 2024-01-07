@@ -6,4 +6,5 @@ type Tabler interface {
 
 type EthereumIndexRepository interface {
 	AddBlocks(records []*EthereumBlock) error
+	AddTransactions(records []*EthereumTransaction) error
 }
