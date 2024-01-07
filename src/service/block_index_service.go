@@ -5,23 +5,26 @@ import (
 	"math/big"
 
 	"github.com/afunTW/eth-data-provider/src/config"
+	"github.com/afunTW/eth-data-provider/src/repository"
 	"github.com/ethereum/go-ethereum/ethclient"
 	log "github.com/sirupsen/logrus"
 )
 
 type BlockIndexService struct {
 	config          *config.Config
+	repo            repository.EthereumIndexRepository
 	client          *ethclient.Client
 	blockNumberChan chan *big.Int
 }
 
-func NewBlockIndexService(config *config.Config) *BlockIndexService {
+func NewBlockIndexService(config *config.Config, repoBlockIndex repository.EthereumIndexRepository) *BlockIndexService {
 	client, err := ethclient.Dial(config.EthereumHost)
 	if err != nil {
 		log.Fatalf("BlockIndexService: failed %v\n", err)
 	}
 	return &BlockIndexService{
 		config:          config,
+		repo:            repoBlockIndex,
 		client:          client,
 		blockNumberChan: make(chan *big.Int, config.EthereumBlockWorkerCount),
 	}
@@ -64,6 +67,14 @@ func (s *BlockIndexService) blockWorker(ctx context.Context) {
 			}
 			transactions := block.Transactions()
 			log.Debugf("BlockWorker(blockNum=%v): get %v transactions\n", blockNum, len(transactions))
+			s.repo.AddBlocks([]*repository.EthereumBlock{
+				{
+					BlockNum:   block.Number().Uint64(),
+					BlockHash:  block.Hash().Hex(),
+					BlockTime:  block.Time(),
+					ParentHash: block.ParentHash().Hex(),
+				},
+			})
 		}
 	}
 }

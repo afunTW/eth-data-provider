@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/afunTW/eth-data-provider/src/config"
+	"github.com/afunTW/eth-data-provider/src/repository"
 	"github.com/afunTW/eth-data-provider/src/router"
 	"github.com/afunTW/eth-data-provider/src/service"
 	log "github.com/sirupsen/logrus"
@@ -28,11 +29,12 @@ func main() {
 	log.SetLevel(ll)
 	v1Handler := router.NewHandlerV1Impl(config)
 	router := router.NewRouter(v1Handler)
+	repoBlockIndex := repository.NewEthereumIndexGormImpl(config.GetDsn())
 
 	// run service
 	apiService := service.NewApiService(config, router)
 	go apiService.Run(ctx)
-	blockIndexService := service.NewBlockIndexService(config)
+	blockIndexService := service.NewBlockIndexService(config, repoBlockIndex)
 	go blockIndexService.Start(ctx)
 
 	// block until recv signal
