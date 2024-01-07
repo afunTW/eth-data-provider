@@ -7,16 +7,18 @@ import (
 	"time"
 
 	"github.com/afunTW/eth-data-provider/src/config"
+	"github.com/afunTW/eth-data-provider/src/repository"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
 type handlerV1Impl struct {
 	config *config.Config
+	repo   repository.EthereumIndexRepository
 }
 
-func NewHandlerV1Impl(config *config.Config) Handler {
-	return &handlerV1Impl{config: config}
+func NewHandlerV1Impl(config *config.Config, repo repository.EthereumIndexRepository) Handler {
+	return &handlerV1Impl{config: config, repo: repo}
 }
 
 // @summary Get Latest blocks

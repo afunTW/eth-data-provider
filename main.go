@@ -27,9 +27,9 @@ func main() {
 		log.Fatal(err)
 	}
 	log.SetLevel(ll)
-	v1Handler := router.NewHandlerV1Impl(config)
-	router := router.NewRouter(v1Handler)
 	repoBlockIndex := repository.NewEthereumIndexGormImpl(config.GetDsn())
+	v1Handler := router.NewHandlerV1Impl(config, repoBlockIndex)
+	router := router.NewRouter(v1Handler)
 
 	// run service
 	apiService := service.NewApiService(config, router)
