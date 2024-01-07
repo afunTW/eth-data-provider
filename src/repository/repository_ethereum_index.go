@@ -50,10 +50,32 @@ func (r *ethereumIndexGormImpl) GetBlock(blockNum uint64) (*EthereumBlock, error
 	return record, nil
 }
 
+func (r *ethereumIndexGormImpl) GetTransaction(txHash string) (*EthereumTransaction, error) {
+	var record *EthereumTransaction
+	result := r.db.Model(&EthereumTransaction{}).
+		Where("tx_hash = ?", txHash).
+		First(&record)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return record, nil
+}
+
 func (r *ethereumIndexGormImpl) GetTransactions(blockNum uint64) ([]*EthereumTransaction, error) {
 	var records []*EthereumTransaction
 	result := r.db.Model(&EthereumTransaction{}).
 		Where("block_num = ?", blockNum).
+		Find(&records)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return records, nil
+}
+
+func (r *ethereumIndexGormImpl) GetLogs(txHash string) ([]*EthereumLog, error) {
+	var records []*EthereumLog
+	result := r.db.Model(&EthereumLog{}).
+		Where("tx_hash = ?", txHash).
 		Find(&records)
 	if result.Error != nil {
 		return nil, result.Error

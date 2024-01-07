@@ -39,7 +39,7 @@ type RespGetTransactionDetail struct {
 // ==============================
 
 type BlockInfo struct {
-	BlockNum   int    `json:"block_num"`
+	BlockNum   uint64 `json:"block_num"`
 	BlockHash  string `json:"block_hash"`
 	BlockTime  uint64 `json:"block_time"`
 	ParentHash string `json:"parent_hash"`
@@ -49,12 +49,12 @@ type TransactionInfo struct {
 	TxHash string `json:"tx_hash"`
 	From   string `json:"from"`
 	To     string `json:"to"`
-	Nonce  int    `json:"nonce"`
+	Nonce  uint64 `json:"nonce"`
 	Data   string `json:"data"`
-	Value  string `json:"value"`
+	Value  uint64 `json:"value"`
 }
 
 type TransactionEventLogInfo struct {
-	Index int    `json:"index"`
+	Index uint64 `json:"index"`
 	Data  string `json:"data"`
 }
