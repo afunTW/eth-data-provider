@@ -35,6 +35,11 @@ func NewBlockWorker(
 
 func (w *blockWorkerImpl) Start(ctx context.Context) {
 	log.Infof("BlockWorker(id=%v): start\n", w.id)
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("BlockWorker(id=%v): panic %v\n", w.id, err)
+		}
+	}()
 	for {
 		select {
 		case <-ctx.Done():
