@@ -36,6 +36,7 @@ func main() {
 	go apiService.Run(ctx)
 	blockIndexService := service.NewBlockIndexService(config, repoBlockIndex)
 	go blockIndexService.Start(ctx)
+	defer blockIndexService.Stop()
 
 	// block until recv signal
 	quit := make(chan os.Signal, 1)
