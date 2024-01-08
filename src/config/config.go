@@ -9,23 +9,27 @@ import (
 )
 
 type Config struct {
-	LogLevel                 string `mapstructure:"LOG_LEVEL"`
-	ServerBindAddr           string `mapstructure:"SERVER_BIND_ADDR"`
-	DbHost                   string `mapstructure:"DB_HOST" validate:"required"`
-	DbPort                   int    `mapstructure:"DB_PORT" validate:"required"`
-	DbName                   string `mapstructure:"DB_NAME" validate:"required"`
-	DbUser                   string `mapstructure:"DB_USER" validate:"required"`
-	DbPassword               string `mapstructure:"DB_PASSWORD" validate:"required"`
-	EthereumHost             string `mapstructure:"ETHEREUM_HOST" validate:"required"`
-	EthereumBlockInitFrom    int    `mapstructure:"ETHEREUM_BLOCK_INIT_FROM" validate:"required"`
-	EthereumBlockWorkerCount int    `mapstructure:"ETHEREUM_BLOCK_WORKER_COUNT"`
+	LogLevel                     string `mapstructure:"LOG_LEVEL"`
+	ServerBindAddr               string `mapstructure:"SERVER_BIND_ADDR"`
+	DbHost                       string `mapstructure:"DB_HOST" validate:"required"`
+	DbPort                       int    `mapstructure:"DB_PORT" validate:"required"`
+	DbName                       string `mapstructure:"DB_NAME" validate:"required"`
+	DbUser                       string `mapstructure:"DB_USER" validate:"required"`
+	DbPassword                   string `mapstructure:"DB_PASSWORD" validate:"required"`
+	EthereumHost                 string `mapstructure:"ETHEREUM_HOST" validate:"required"`
+	EthereumBlockInitFrom        int    `mapstructure:"ETHEREUM_BLOCK_INIT_FROM" validate:"required"`
+	EthereumBlockWorkerCount     int    `mapstructure:"ETHEREUM_BLOCK_WORKER_COUNT"`
+	EthereumBlockConfirmCount    int    `mapstructure:"ETHEREUM_BLOCK_CONFIRM_COUNT"`
+	BlockPullIntervalMillisecond int    `mapstructure:"BLOCK_PULL_INTERVAL_MILLISECOND"`
 }
 
 func NewConfig() (config *Config) {
 	// set default value
 	viper.SetDefault("LOG_LEVEL", "info")
 	viper.SetDefault("SERVER_BIND_ADDR", ":8080")
-	viper.SetDefault("ETHEREUM_BLOKC_WORKER_COUNT", 100)
+	viper.SetDefault("ETHEREUM_BLOCK_WORKER_COUNT", 100)
+	viper.SetDefault("ETHEREUM_BLOCK_CONFIRM_COUNT", 20)
+	viper.SetDefault("BLOCK_PULL_INTERVAL_MILLISECOND", 1000)
 
 	// bind env variable
 	tags := GetMapStructureTag(Config{})

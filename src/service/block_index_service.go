@@ -3,19 +3,22 @@ package service
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/afunTW/eth-data-provider/src/config"
 	"github.com/afunTW/eth-data-provider/src/repository"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/afunTW/eth-data-provider/src/worker"
 	"github.com/ethereum/go-ethereum/ethclient"
 	log "github.com/sirupsen/logrus"
 )
 
 type BlockIndexService struct {
-	config          *config.Config
-	repo            repository.EthereumIndexRepository
-	client          *ethclient.Client
-	blockNumberChan chan *big.Int
+	config        *config.Config
+	repo          repository.EthereumIndexRepository
+	client        *ethclient.Client
+	blockNumberCh chan *big.Int
+	closeCh       chan int8
+	workerMap     map[int]worker.BlockWorker
 }
 
 func NewBlockIndexService(config *config.Config, repoBlockIndex repository.EthereumIndexRepository) *BlockIndexService {
@@ -24,10 +27,12 @@ func NewBlockIndexService(config *config.Config, repoBlockIndex repository.Ether
 		log.Fatalf("BlockIndexService: failed %v\n", err)
 	}
 	return &BlockIndexService{
-		config:          config,
-		repo:            repoBlockIndex,
-		client:          client,
-		blockNumberChan: make(chan *big.Int, config.EthereumBlockWorkerCount),
+		config:        config,
+		repo:          repoBlockIndex,
+		client:        client,
+		blockNumberCh: make(chan *big.Int, config.EthereumBlockWorkerCount),
+		closeCh:       make(chan int8, 1),
+		workerMap:     make(map[int]worker.BlockWorker),
 	}
 }
 
@@ -38,102 +43,54 @@ func (s *BlockIndexService) Start(ctx context.Context) {
 	if err != nil {
 		log.Fatalf("BlockIndexService: start failed %v\n", err)
 	}
-	log.Debugf("BlockIndexService: get the latest block number %v\n", *head.Number)
+	log.Debugf("BlockIndexService: get the latest block number %v\n", head.Number.String())
 
 	// init N workers to crawl block infomation till the latest block
 	for i := 0; i < s.config.EthereumBlockWorkerCount; i++ {
-		go s.blockWorker(ctx)
+		blockWorker := worker.NewBlockWorker(i, s.client, s.repo, s.blockNumberCh)
+		s.workerMap[i] = blockWorker
+		go blockWorker.Start(ctx)
 	}
-	log.Debugf("BlockIndexService: spawn %v workers\n", s.config.EthereumBlockWorkerCount)
-	startBlockNumber := big.NewInt(int64(s.config.EthereumBlockInitFrom))
-	one := big.NewInt(1)
-	for blockNum := startBlockNumber; blockNum.Cmp(head.Number) <= 0; blockNum.Add(blockNum, one) {
-		s.blockNumberChan <- new(big.Int).Set(blockNum)
-	}
+	startBlockNum := big.NewInt(int64(s.config.EthereumBlockInitFrom))
+	endBlockNum := big.NewInt(0).Sub(head.Number, big.NewInt(int64(s.config.EthereumBlockConfirmCount)))
+	s.spawnBlockWorker(startBlockNum, endBlockNum)
 
-	// TODO: keep monitor the latest N blocks
-}
-
-func (s *BlockIndexService) blockWorker(ctx context.Context) {
+	// keep monitor the latest N blocks
+	ticker := time.NewTicker(time.Duration(s.config.BlockPullIntervalMillisecond) * time.Millisecond)
+	defer ticker.Stop()
+	latestBlockNum := new(big.Int).Set(endBlockNum)
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case blockNum := <-s.blockNumberChan:
-			// handle block
-			block, err := s.client.BlockByNumber(ctx, blockNum)
+		case <-s.closeCh:
+			return
+		case <-ticker.C:
+			head, err := s.client.HeaderByNumber(ctx, nil)
 			if err != nil {
-				log.Errorf("BlockWorker(blockNum=%v): failed %v\n", blockNum, err)
+				log.Errorf("BlockIndexService: start monitor failed %v\n", err)
 				continue
 			}
-			// TODO: check block nil pointer dereference problem
-			err = s.repo.AddBlocks([]*repository.EthereumBlock{
-				{
-					BlockNum:   block.Number().Uint64(),
-					BlockHash:  block.Hash().Hex(),
-					BlockTime:  block.Time(),
-					ParentHash: block.ParentHash().Hex(),
-				},
-			})
-			if err != nil {
-				log.Errorf("BlockWorker(blockNum=%v): failed %v\n", blockNum, err)
+			log.Debugf("BlockIndexService: get the latest block number %v\n", head.Number.String())
+			endBlockNum = big.NewInt(0).Sub(head.Number, big.NewInt(int64(s.config.EthereumBlockConfirmCount)))
+			if latestBlockNum.Cmp(endBlockNum) < 0 {
+				s.spawnBlockWorker(latestBlockNum, endBlockNum)
+				latestBlockNum = new(big.Int).Set(endBlockNum)
 			}
-			// handle transactions
-			// handle transactionLog from receipt
-			txs := block.Transactions()
-			log.Debugf("BlockWorker(blockNum=%v): get %v transactions\n", blockNum, len(txs))
-			var txRecords []*repository.EthereumTransaction
-			var logRecords []*repository.EthereumLog
-			for _, tx := range txs {
-				from, err := types.Sender(types.NewEIP155Signer(tx.ChainId()), tx)
-				if err != nil {
-					from, _ = types.Sender(types.HomesteadSigner{}, tx)
-				}
-				// TODO: ignore data if it excceed the limit of database blob
-				txData := tx.Data()
-				if len(txData) > 65535 {
-					txData = nil
-				}
-				// TODO: check block nil pointer dereference problem
-				txRecords = append(txRecords, &repository.EthereumTransaction{
-					TxHash:      tx.Hash().Hex(),
-					BlockNum:    block.Number().Uint64(),
-					FromAddress: from.Hex(),
-					ToAddress:   tx.To().Hex(),
-					Nonce:       tx.Nonce(),
-					Data:        txData,
-					Value:       tx.Value().Uint64(),
-				})
-				receipt, err := s.client.TransactionReceipt(ctx, tx.Hash())
-				if err != nil {
-					log.Errorf("BlockWorker(blockNum=%v): failed get receipt\n%v\n", blockNum, err)
-				}
-				for _, txLog := range receipt.Logs {
-					if receipt.TxHash.Hex() != tx.Hash().Hex() {
-						log.Warnf("receipt hash: %v\ntx hash: %v\n", receipt.TxHash.Hex(), tx.Hash().Hex())
-					}
-					txLogData := txLog.Data
-					if len(txLog.Data) > 65535 {
-						txLogData = nil
-					}
-					// TODO: check block nil pointer dereference problem
-					logRecords = append(logRecords, &repository.EthereumLog{
-						TxHash:   receipt.TxHash.Hex(),
-						LogIndex: uint64(txLog.Index),
-						Data:     txLogData,
-					})
-				}
-			}
-			err = s.repo.AddTransactions(txRecords)
-			if err != nil {
-				log.Errorf("BlockWorker(blockNum=%v): failed add txs\n%v\n", blockNum, err)
-			}
-			log.Debugf("BlockWorker(blockNum=%v): processed %v transactions\n", blockNum, len(txRecords))
-			err = s.repo.AddLogs(logRecords)
-			if err != nil {
-				log.Errorf("BlockWorker(blockNum=%v): failed add logs\n%v\n", blockNum, err)
-			}
-			log.Debugf("BlockWorker(blockNum=%v): processed %v logs\n", blockNum, len(logRecords))
 		}
+	}
+}
+
+func (s *BlockIndexService) Stop() {
+	log.Info("BlockIndexService: stop")
+	s.closeCh <- int8(1)
+	for _, w := range s.workerMap {
+		w.Stop()
+	}
+}
+
+func (s *BlockIndexService) spawnBlockWorker(startBlockNum *big.Int, endBlockNum *big.Int) {
+	for n := startBlockNum; n.Cmp(endBlockNum) <= 0; n.Add(n, big.NewInt(1)) {
+		s.blockNumberCh <- new(big.Int).Set(n)
 	}
 }
